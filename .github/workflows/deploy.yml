@@ -1,0 +1,45 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # schadet nicht; für eigene pushes
+    steps:
+      - name: Checkout 🛎️
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Setup Node.js ⚙️
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies 📦
+        run: npm ci
+
+      - name: Build with env
+        run: |
+          echo "VITE_N8N_AUTH_TOKEN=${{ secrets.VUE_APP_N8N_AUTH_TOKEN }}" >> .env.production
+          echo "VITE_N8N_WEBHOOK=${{ secrets.VUE_APP_N8N_WEBHOOK }}" >> .env.production
+          npm run build
+
+      - name: Check env file
+        run: cat .env.production
+        
+      - name: Deploy to GitHub Pages 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          token: ${{ secrets.DEPLOY_TOKEN }}
+          repository-name: JohnDola/sort-tec-public
+          branch: main
+          clean: true
